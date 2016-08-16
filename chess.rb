@@ -43,12 +43,8 @@ class Chess
     initialize_board
     initialize_chess_pieces
     set_initial_locations
-    #@board[6][7].occupant = nil # TODO REMOVE
     calculate_possible_moves
     
-    #@rooks.each do |rook|
-    #  puts "#{rook.possible_moves}"
-    #end
   end
   
   # Initializes the game board
@@ -247,59 +243,58 @@ class Chess
       
       row = @rooks[index].row
       col = @rooks[index].col
-      
-      # ULDR until an occupied square is reached
-      # Do color check there
       # Up
       while(row > 0)
-        @rooks[index].possible_moves << [row - 1, col] if(@board[row - 1][col].occupant == nil)
-        if(@board[row - 1][col].occupant != nil)
-          case @rooks[index].playerID
-            when 1
-              @rooks[index].possible_moves << [row - 1, col] if(@board[row - 1][col].occupant.playerID == 2)
-            when 2
-              @rooks[index].possible_moves << [row - 1, col] if(@board[row - 1][col].occupant.playerID == 1)
-          end
-          
-          # Stop once an occupied square has been reached
-          break
-        end
+        reached_end = rook_direction_helper(index, row, col, -1, 0)
+        break if(reached_end == 1)
         row -= 1
       end
       
+      row = @rooks[index].row
+      # Down
+      while(row < 7)
+        reached_end = rook_direction_helper(index, row, col, 1, 0)
+        break if(reached_end == 1)
+        row += 1
+      end
+      
+      row = @rooks[index].row
+      col = @rooks[index].col
+      # Left
+      while(col > 0)
+        reached_end = rook_direction_helper(index, row, col, 0, -1)
+        break if(reached_end == 1)
+        col -= 1
+      end
+      
+      col = @rooks[index].col
+      # Right
+      while(col < 7)
+        reached_end = rook_direction_helper(index, row, col, 0, 1)
+        break if(reached_end == 1)
+        col += 1
+      end
     end
   end
   
   # Helper method used to calculate the possible moves of each rook in the UDLR directions
-  def rook_direction_helper(direction)
-    row_modifier = 0
-    col_modifier = 0
-    
-    case direction
-      when "U"
-      
-      when "D"
-      
-      when "L"
-      
-      when "R"
-    end
-    
-    while(row > 0)
-      @rooks[index].possible_moves << [row - 1, col] if(@board[row - 1][col].occupant == nil)
-      if(@board[row - 1][col].occupant != nil)
-        case @rooks[index].playerID
-          when 1
-            @rooks[index].possible_moves << [row - 1, col] if(@board[row - 1][col].occupant.playerID == 2)
-          when 2
-            @rooks[index].possible_moves << [row - 1, col] if(@board[row - 1][col].occupant.playerID == 1)
-        end
-
-        # Stop once an occupied square has been reached
-        break
+  def rook_direction_helper(index, row, col, row_modifier, col_modifier)
+    if(@board[row + row_modifier][col + col_modifier].occupant == nil)
+      @rooks[index].possible_moves << [row + row_modifier, col + col_modifier]
+      return 0
+    elsif(@board[row + row_modifier][col + col_modifier].occupant != nil)
+      case @rooks[index].playerID
+        when 1
+          @rooks[index].possible_moves << [row + row_modifier, col + col_modifier] if(@board[row + row_modifier][col + col_modifier].occupant.playerID == 2)
+        when 2
+          @rooks[index].possible_moves << [row + row_modifier, col + col_modifier] if(@board[row + row_modifier][col + col_modifier].occupant.playerID == 1)
       end
-      row -= 1
+
+      # Stop once an occupied square has been reached
+      return 1
+      #break
     end
+    
   end
   
   # Calculates all possible moves for all the knights on the chess board
@@ -435,4 +430,4 @@ class Chess
 end
 
 c = Chess.new
-c.display_board
+#c.display_board
