@@ -10,14 +10,14 @@ class BoardSquare
 end
 
 # Data structure representing a single chess piece
-# playerID : White = 1, Black = 2
+# player_ID : White = 1, Black = 2
 # type: 1 = pawn, 2 = rook, 3 = knight, 4 = bishop, 5 = king, 6 = queen
 class ChessPiece
-  attr_accessor :type, :playerID, :number, :row, :col, :possible_moves, :alive
+  attr_accessor :type, :player_ID, :number, :row, :col, :possible_moves, :alive
   
   def initialize
     @type = -1
-    @playerID = -1
+    @player_ID = -1
     @number = -1 # TODO might not be used
     @row = -1
     @col = -1
@@ -43,9 +43,15 @@ class Chess
     initialize_board
     initialize_chess_pieces
     set_initial_locations
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+=begin
+    @board[7][5].occupant = nil
+    @board[4][3].occupant = @bishops[1]
+    @bishops[1].row = 4
+    @bishops[1].col = 3
     calculate_possible_moves
-    
-    @knights.each do |k|
+=end
+    @bishops.each do |k|
       puts "#{k.possible_moves}"
     end
   end
@@ -93,9 +99,9 @@ class Chess
       
       # The 1st half of the array consists of white pieces, black for the 2nd half 
       if(i < half)
-        tempPiece.playerID = 1
+        tempPiece.player_ID = 1
       elsif(i >= half)
-        tempPiece.playerID = 2 
+        tempPiece.player_ID = 2 
       end
       
       case type
@@ -204,6 +210,7 @@ class Chess
   def calculate_possible_moves
     arrays = [@pawns, @rooks, @knights, @bishops, @kings, @queens]
     
+    # Clear the possible_moves array each time
     arrays.each do |array|
       array.each do |element|
         element.possible_moves = []
@@ -213,16 +220,19 @@ class Chess
     calculate_pawn_moves
     calculate_rook_moves
     calculate_knight_moves
+    calculate_bishop_moves
+    calculate_king_moves
+    calculate_queen_moves
   end
   
   # Calculates all possible moves for all the pawns on the chess board
   def calculate_pawn_moves
     @pawns.each_with_index do |pawn, index|
       # Does not calculate moves if the piece has been captured
-      next if(!@pawns[index].alive)
+      next if(!pawn.alive)
       
-      row = @pawns[index].row
-      col = @pawns[index].col
+      row = pawn.row
+      col = pawn.col
       
       # White
       if(index < 8)
@@ -231,9 +241,9 @@ class Chess
         # 2x Forward
         @pawns[index].possible_moves << [row - 2, col] if(row == 6 && @board[row - 2][col].occupant == nil)
         # Capture left
-        @pawns[index].possible_moves << [row - 1, col - 1] if(row > 0 && col > 0 && @board[row - 1][col - 1].occupant != nil && @board[row - 1][col - 1].occupant.playerID == 2)
+        @pawns[index].possible_moves << [row - 1, col - 1] if(row > 0 && col > 0 && @board[row - 1][col - 1].occupant != nil && @board[row - 1][col - 1].occupant.player_ID == 2)
         # Capture right
-        @pawns[index].possible_moves << [row - 1, col + 1] if(row > 0 && col < 7 && @board[row - 1][col + 1].occupant != nil && @board[row - 1][col + 1].occupant.playerID == 2)
+        @pawns[index].possible_moves << [row - 1, col + 1] if(row > 0 && col < 7 && @board[row - 1][col + 1].occupant != nil && @board[row - 1][col + 1].occupant.player_ID == 2)
       # Black
       elsif(index >= 8)
         # Forward
@@ -241,9 +251,9 @@ class Chess
         # 2x Forward
         @pawns[index].possible_moves << [row + 2, col] if(row == 1 && @board[row + 2][col].occupant == nil)
         # Capture left
-        @pawns[index].possible_moves << [row + 1, col - 1] if(row < 7 && col > 0 && @board[row + 1][col - 1].occupant != nil && @board[row + 1][col - 1].occupant.playerID == 1)
+        @pawns[index].possible_moves << [row + 1, col - 1] if(row < 7 && col > 0 && @board[row + 1][col - 1].occupant != nil && @board[row + 1][col - 1].occupant.player_ID == 1)
         # Capture right
-        @pawns[index].possible_moves << [row + 1, col + 1] if(row < 7 && col < 7 && @board[row + 1][col + 1].occupant != nil && @board[row + 1][col + 1].occupant.playerID == 1)
+        @pawns[index].possible_moves << [row + 1, col + 1] if(row < 7 && col < 7 && @board[row + 1][col + 1].occupant != nil && @board[row + 1][col + 1].occupant.player_ID == 1)
       end
     end
   end
@@ -252,10 +262,10 @@ class Chess
   # TODO: probably need to refactor this to reuse the code for queen move checks
   def calculate_rook_moves
     @rooks.each_with_index do |rook, index|
-      next if(!@rooks[index].alive)
+      next if(!rook.alive)
       
-      row = @rooks[index].row
-      col = @rooks[index].col
+      row = rook.row
+      col = rook.col
       # Up
       while(row > 0)
         reached_end = rook_direction_helper(index, row, col, -1, 0)
@@ -300,11 +310,11 @@ class Chess
       return 0
     # Adds the given coordinates into the list of possible moves if the square is occupied by a capturable piece
     elsif(@board[row + row_modifier][col + col_modifier].occupant != nil)
-      case @rooks[index].playerID
+      case @rooks[index].player_ID
         when 1
-          @rooks[index].possible_moves << [row + row_modifier, col + col_modifier] if(@board[row + row_modifier][col + col_modifier].occupant.playerID == 2)
+          @rooks[index].possible_moves << [row + row_modifier, col + col_modifier] if(@board[row + row_modifier][col + col_modifier].occupant.player_ID == 2)
         when 2
-          @rooks[index].possible_moves << [row + row_modifier, col + col_modifier] if(@board[row + row_modifier][col + col_modifier].occupant.playerID == 1)
+          @rooks[index].possible_moves << [row + row_modifier, col + col_modifier] if(@board[row + row_modifier][col + col_modifier].occupant.player_ID == 1)
       end
 
       return 1
@@ -315,8 +325,10 @@ class Chess
   # Calculates all possible moves for all the knights on the chess board
   def calculate_knight_moves
     @knights.each_with_index do |knight, index|
-      row = @knights[index].row
-      col = @knights[index].col
+      next if(!knight.alive)
+      
+      row = knight.row
+      col = knight.col
       
       # Upper right
       knight_direction_helper(index, row, col, -2, 1) if(row > 1 && col < 7)
@@ -344,17 +356,93 @@ class Chess
       @knights[index].possible_moves << [row + row_modifier, col + col_modifier]
     # Adds the given coordinates into the list of possible moves if the square is occupied by a capturable piece
     elsif(@board[row + row_modifier][col + col_modifier].occupant != nil)
-      case @knights[index].playerID
+      case @knights[index].player_ID
         when 1
-          @knights[index].possible_moves << [row + row_modifier, col + col_modifier] if(@board[row + row_modifier][col + col_modifier].occupant.playerID == 2)
+          @knights[index].possible_moves << [row + row_modifier, col + col_modifier] if(@board[row + row_modifier][col + col_modifier].occupant.player_ID == 2)
         when 2
-          @knights[index].possible_moves << [row + row_modifier, col + col_modifier] if(@board[row + row_modifier][col + col_modifier].occupant.playerID == 1)
+          @knights[index].possible_moves << [row + row_modifier, col + col_modifier] if(@board[row + row_modifier][col + col_modifier].occupant.player_ID == 1)
       end
     end
   end
   
   # Calculates all possible moves for all the bishops on the chess board
+  # TODO: probably need to refactor this to reuse the code for queen move checks
   def calculate_bishop_moves
+    @bishops.each_with_index do |bishop, index|
+      next if(!bishop.alive)
+      
+      row = bishop.row
+      col = bishop.col
+      
+      # Right upper diagonal
+      while(row > 0 && col < 7)
+        reached_end = generic_direction_helper(4, index, row, col, -1, 1)
+        break if(reached_end == 1)
+        row -= 1
+        col += 1
+      end
+      
+      row = bishop.row
+      col = bishop.col
+      # Right lower diagonal <<<<< TODO COPIED NOT CHANGED YET
+      while(row < 7 && col < 7)
+        reached_end = generic_direction_helper(4, index, row, col, 1, 1)
+        break if(reached_end == 1)
+        row += 1
+        col += 1
+      end
+      
+      row = bishop.row
+      col = bishop.col
+      # Left lower diagonal
+      while(row < 7 && col > 0)
+        reached_end = generic_direction_helper(4, index, row, col, 1, -1)
+        break if(reached_end == 1)
+        row += 1
+        col -= 1
+      end
+      
+      row = bishop.row
+      col = bishop.col
+      # Left upper diagonal
+      while(row > 0 && col > 0)
+        reached_end = generic_direction_helper(4, index, row, col, -1, -1)
+        break if(reached_end == 1)
+        row -= 1
+        col -= 1
+      end
+    end
+  end
+  
+  # Helper method used to calculate the possible moves of each specified chess piece
+  def generic_direction_helper(type, index, row, col, row_modifier, col_modifier)
+    temp_array = []
+    
+    case type
+      when 1
+      when 2
+      when 3
+      when 4
+        temp_array = @bishops
+      when 5
+      when 6
+    end
+    
+    if(@board[row + row_modifier][col + col_modifier].occupant == nil)
+      temp_array[index].possible_moves << [row + row_modifier, col + col_modifier]
+    # Adds the given coordinates into the list of possible moves if the square is occupied by a capturable piece
+    elsif(@board[row + row_modifier][col + col_modifier].occupant != nil)
+      case temp_array[index].player_ID
+        when 1
+          temp_array[index].possible_moves << [row + row_modifier, col + col_modifier] if(@board[row + row_modifier][col + col_modifier].occupant.player_ID == 2)
+        when 2
+          temp_array[index].possible_moves << [row + row_modifier, col + col_modifier] if(@board[row + row_modifier][col + col_modifier].occupant.player_ID == 1)
+      end
+      
+      return 1
+    end
+    
+    return 0
   end
   
   # Calculates all possible moves for the kings on the chess board
@@ -407,7 +495,7 @@ class Chess
       8.times do |col|
         # Blank if no occupant, otherwise fetch the unicode string of the occupant
         occupant = " "
-        occupant = get_chesspiece_unicode(@board[row][col].occupant.playerID, @board[row][col].occupant.type) if(@board[row][col].occupant != nil)
+        occupant = get_chesspiece_unicode(@board[row][col].occupant.player_ID, @board[row][col].occupant.type) if(@board[row][col].occupant != nil)
         print "|"
         print "   #{occupant}   "
       end
@@ -482,4 +570,4 @@ class Chess
 end
 
 c = Chess.new
-#c.display_board
+c.display_board
