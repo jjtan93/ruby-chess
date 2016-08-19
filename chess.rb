@@ -50,10 +50,11 @@ class Chess
     @bishops[1].row = 4
     @bishops[1].col = 3
     calculate_possible_moves
-=end
+
     @bishops.each do |k|
       puts "#{k.possible_moves}"
     end
+=end
   end
   
   # Initializes the game board
@@ -268,7 +269,7 @@ class Chess
       col = rook.col
       # Up
       while(row > 0)
-        reached_end = rook_direction_helper(index, row, col, -1, 0)
+        reached_end = generic_direction_helper(2, index, row, col, -1, 0)
         # Stop once an occupied square has been reached
         break if(reached_end == 1)
         row -= 1
@@ -277,7 +278,7 @@ class Chess
       row = @rooks[index].row
       # Down
       while(row < 7)
-        reached_end = rook_direction_helper(index, row, col, 1, 0)
+        reached_end = generic_direction_helper(2, index, row, col, 1, 0)
         break if(reached_end == 1)
         row += 1
       end
@@ -286,7 +287,7 @@ class Chess
       col = @rooks[index].col
       # Right
       while(col < 7)
-        reached_end = rook_direction_helper(index, row, col, 0, 1)
+        reached_end = generic_direction_helper(2, index, row, col, 0, 1)
         break if(reached_end == 1)
         col += 1
       end
@@ -294,32 +295,11 @@ class Chess
       col = @rooks[index].col
       # Left
       while(col > 0)
-        reached_end = rook_direction_helper(index, row, col, 0, -1)
+        reached_end = generic_direction_helper(2, index, row, col, 0, -1)
         break if(reached_end == 1)
         col -= 1
       end
     end
-  end
-  
-  # Helper method used to calculate the possible moves of each rook in the UDLR directions
-  # Returns 1 when an occupied square is reached, 0 otherwise
-  def rook_direction_helper(index, row, col, row_modifier, col_modifier)
-    # Adds the given coordinates into the list of possible moves if the square is empty
-    if(@board[row + row_modifier][col + col_modifier].occupant == nil)
-      @rooks[index].possible_moves << [row + row_modifier, col + col_modifier]
-      return 0
-    # Adds the given coordinates into the list of possible moves if the square is occupied by a capturable piece
-    elsif(@board[row + row_modifier][col + col_modifier].occupant != nil)
-      case @rooks[index].player_ID
-        when 1
-          @rooks[index].possible_moves << [row + row_modifier, col + col_modifier] if(@board[row + row_modifier][col + col_modifier].occupant.player_ID == 2)
-        when 2
-          @rooks[index].possible_moves << [row + row_modifier, col + col_modifier] if(@board[row + row_modifier][col + col_modifier].occupant.player_ID == 1)
-      end
-
-      return 1
-    end
-    
   end
   
   # Calculates all possible moves for all the knights on the chess board
@@ -331,37 +311,21 @@ class Chess
       col = knight.col
       
       # Upper right
-      knight_direction_helper(index, row, col, -2, 1) if(row > 1 && col < 7)
+      generic_direction_helper(3, index, row, col, -2, 1) if(row > 1 && col < 7)
       # Upper left
-      knight_direction_helper(index, row, col, -2, -1) if(row > 1 && col > 0)
+      generic_direction_helper(3, index, row, col, -2, -1) if(row > 1 && col > 0)
       # Right upper
-      knight_direction_helper(index, row, col, -1, 2) if(row > 0 && col < 6)
+      generic_direction_helper(3, index, row, col, -1, 2) if(row > 0 && col < 6)
       # Right lower
-      knight_direction_helper(index, row, col, 1, 2) if(row < 7 && col < 6)
+      generic_direction_helper(3, index, row, col, 1, 2) if(row < 7 && col < 6)
       # Lower right
-      knight_direction_helper(index, row, col, 2, 1) if(row < 6 && col < 7)
+      generic_direction_helper(3, index, row, col, 2, 1) if(row < 6 && col < 7)
       # Lower left
-      knight_direction_helper(index, row, col, 2, -1) if(row < 6 && col > 0)
+      generic_direction_helper(3, index, row, col, 2, -1) if(row < 6 && col > 0)
       # Left upper
-      knight_direction_helper(index, row, col, -1, -2) if(row > 0 && col > 1)
+      generic_direction_helper(3, index, row, col, -1, -2) if(row > 0 && col > 1)
       # Left lower
-      knight_direction_helper(index, row, col, 1, -2) if(row < 7 && col > 1)
-    end
-  end
-  
-  # Helper method used to calculate the possible moves of each knight
-  def knight_direction_helper(index, row, col, row_modifier, col_modifier)
-    # Adds the given coordinates into the list of possible moves if the square is empty
-    if(@board[row + row_modifier][col + col_modifier].occupant == nil)
-      @knights[index].possible_moves << [row + row_modifier, col + col_modifier]
-    # Adds the given coordinates into the list of possible moves if the square is occupied by a capturable piece
-    elsif(@board[row + row_modifier][col + col_modifier].occupant != nil)
-      case @knights[index].player_ID
-        when 1
-          @knights[index].possible_moves << [row + row_modifier, col + col_modifier] if(@board[row + row_modifier][col + col_modifier].occupant.player_ID == 2)
-        when 2
-          @knights[index].possible_moves << [row + row_modifier, col + col_modifier] if(@board[row + row_modifier][col + col_modifier].occupant.player_ID == 1)
-      end
+      generic_direction_helper(3, index, row, col, 1, -2) if(row < 7 && col > 1)
     end
   end
   
@@ -384,7 +348,7 @@ class Chess
       
       row = bishop.row
       col = bishop.col
-      # Right lower diagonal <<<<< TODO COPIED NOT CHANGED YET
+      # Right lower diagonal
       while(row < 7 && col < 7)
         reached_end = generic_direction_helper(4, index, row, col, 1, 1)
         break if(reached_end == 1)
@@ -419,13 +383,16 @@ class Chess
     temp_array = []
     
     case type
-      when 1
       when 2
+        temp_array = @rooks
       when 3
+        temp_array = @knights
       when 4
         temp_array = @bishops
       when 5
+        temp_array = @kings
       when 6
+        temp_array = @queens
     end
     
     if(@board[row + row_modifier][col + col_modifier].occupant == nil)
