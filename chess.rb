@@ -414,6 +414,27 @@ class Chess
   
   # Calculates all possible moves for the kings on the chess board
   def calculate_king_moves
+    @kings.each_with_index do |king, index|
+      row = king.row
+      col = king.col
+      
+      # Up
+      generic_direction_helper(5, index, row, col, -1, 0) if(row > 0)
+      # Upper right diagonal
+      generic_direction_helper(5, index, row, col, -1, 1) if(row > 0 && col < 7)
+      # Right
+      generic_direction_helper(5, index, row, col, 0, 1) if(col < 7)
+      # Lower right diagonal
+      generic_direction_helper(5, index, row, col, 1, 1) if(row < 7 && col < 7)
+      # Down
+      generic_direction_helper(5, index, row, col, 1, 0) if(row < 7)
+      # Lower left diagonal
+      generic_direction_helper(5, index, row, col, 1, -1) if(row < 7 && col > 0)
+      # Left
+      generic_direction_helper(5, index, row, col, 0, -1) if(col > 0)
+      # Upper left diagonal
+      generic_direction_helper(5, index, row, col, -1, -1) if(row > 0 && col > 0)
+    end
   end
   
   # Calculates all possible moves for the queens on the chess board
