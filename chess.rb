@@ -219,9 +219,9 @@ class Chess
     end
     
     calculate_pawn_moves
-    calculate_rook_moves
+    calculate_rook_moves(2)
     calculate_knight_moves
-    calculate_bishop_moves
+    calculate_bishop_moves(4)
     calculate_king_moves
     calculate_queen_moves
   end
@@ -260,42 +260,52 @@ class Chess
   end
   
   # Calculates all possible moves for all the rooks on the chess board
-  # TODO: probably need to refactor this to reuse the code for queen move checks
-  def calculate_rook_moves
-    @rooks.each_with_index do |rook, index|
-      next if(!rook.alive)
+  # Also used to calculate possible moves for queens
+  def calculate_rook_moves(type)
+    temp_array = []
+    
+    # The type argument specifies whether the method should be used to calculate possible moves for rooks/queens 
+    case type
+      when 2
+        temp_array = @rooks
+      when 6
+        temp_array = @queens
+    end
+    
+    temp_array.each_with_index do |piece, index|
+      next if(!piece.alive)
       
-      row = rook.row
-      col = rook.col
+      row = piece.row
+      col = piece.col
       # Up
       while(row > 0)
-        reached_end = generic_direction_helper(2, index, row, col, -1, 0)
+        reached_end = generic_direction_helper(type, index, row, col, -1, 0)
         # Stop once an occupied square has been reached
         break if(reached_end == 1)
         row -= 1
       end
       
-      row = @rooks[index].row
+      row = piece.row
       # Down
       while(row < 7)
-        reached_end = generic_direction_helper(2, index, row, col, 1, 0)
+        reached_end = generic_direction_helper(type, index, row, col, 1, 0)
         break if(reached_end == 1)
         row += 1
       end
       
-      row = @rooks[index].row
-      col = @rooks[index].col
+      row = piece.row
+      col = piece.col
       # Right
       while(col < 7)
-        reached_end = generic_direction_helper(2, index, row, col, 0, 1)
+        reached_end = generic_direction_helper(type, index, row, col, 0, 1)
         break if(reached_end == 1)
         col += 1
       end
       
-      col = @rooks[index].col
+      col = piece.col
       # Left
       while(col > 0)
-        reached_end = generic_direction_helper(2, index, row, col, 0, -1)
+        reached_end = generic_direction_helper(type, index, row, col, 0, -1)
         break if(reached_end == 1)
         col -= 1
       end
@@ -330,47 +340,57 @@ class Chess
   end
   
   # Calculates all possible moves for all the bishops on the chess board
-  # TODO: probably need to refactor this to reuse the code for queen move checks
-  def calculate_bishop_moves
-    @bishops.each_with_index do |bishop, index|
-      next if(!bishop.alive)
+  # Also used to calculate possible moves for queens
+  def calculate_bishop_moves(type)
+    temp_array = []
+    
+    # The type argument specifies whether the method should be used to calculate possible moves for bishops/queens 
+    case type
+      when 4
+        temp_array = @bishops
+      when 6
+        temp_array = @queens
+    end
+    
+    temp_array.each_with_index do |piece, index|
+      next if(!piece.alive)
       
-      row = bishop.row
-      col = bishop.col
+      row = piece.row
+      col = piece.col
       
       # Right upper diagonal
       while(row > 0 && col < 7)
-        reached_end = generic_direction_helper(4, index, row, col, -1, 1)
+        reached_end = generic_direction_helper(type, index, row, col, -1, 1)
         break if(reached_end == 1)
         row -= 1
         col += 1
       end
       
-      row = bishop.row
-      col = bishop.col
+      row = piece.row
+      col = piece.col
       # Right lower diagonal
       while(row < 7 && col < 7)
-        reached_end = generic_direction_helper(4, index, row, col, 1, 1)
+        reached_end = generic_direction_helper(type, index, row, col, 1, 1)
         break if(reached_end == 1)
         row += 1
         col += 1
       end
       
-      row = bishop.row
-      col = bishop.col
+      row = piece.row
+      col = piece.col
       # Left lower diagonal
       while(row < 7 && col > 0)
-        reached_end = generic_direction_helper(4, index, row, col, 1, -1)
+        reached_end = generic_direction_helper(type, index, row, col, 1, -1)
         break if(reached_end == 1)
         row += 1
         col -= 1
       end
       
-      row = bishop.row
-      col = bishop.col
+      row = piece.row
+      col = piece.col
       # Left upper diagonal
       while(row > 0 && col > 0)
-        reached_end = generic_direction_helper(4, index, row, col, -1, -1)
+        reached_end = generic_direction_helper(type, index, row, col, -1, -1)
         break if(reached_end == 1)
         row -= 1
         col -= 1
@@ -439,6 +459,9 @@ class Chess
   
   # Calculates all possible moves for the queens on the chess board
   def calculate_queen_moves
+    # The methods for calculating the possible moves for rooks and bishops are reused
+    calculate_rook_moves(6)
+    calculate_bishop_moves(6)
   end
   
   # Prompts the current player for a move
