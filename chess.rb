@@ -42,6 +42,11 @@ class Chess
     @p1_possible_movelist = []
     @p2_possible_movelist = []
     
+    @source = []
+    @destination = []
+    @piece_moved = nil
+    @piece_captured = nil
+    
     initialize_board
     initialize_chess_pieces
     set_initial_locations
@@ -499,6 +504,7 @@ class Chess
   end
   
   # Moves the chess piece which is located at the source coordinates to the destination coordinates
+  # If a capture is possible, no color check is done as the check is done prior to calling this method
   def move_piece(source, destination)
     piece_to_move = @board[source[0]][source[1]].occupant
     piece_to_capture = @board[destination[0]][destination[1]].occupant
@@ -511,11 +517,28 @@ class Chess
     
     # If the destination square is occupied, change the status of the occupant to "dead"
     piece_to_capture.alive = false if(piece_to_capture != nil)
+    
+    # Record the necessary information which will be used to undo a move if necessary
+    @source = source
+    @destination = destination
+    @piece_moved = piece_to_move
+    @piece_captured = piece_to_capture
   end
 
   # Reverts the last move which was made
   def undo_last_move
+    # Move the piece back to the original location
+    @piece_moved.row = @source[0]
+    @piece_moved.col = @source[1]
+    @board[@source[0]][@source[1]].occupant = @piece_moved
     
+    @board[@destination[0]][@destination[1]].occupant = nil
+    
+    # Revive the captured piece, if possible
+    if(@piece_captured != nil)
+      @piece_captured.alive = true
+      @board[@destination[0]][@destination[1]].occupant = @piece_captured
+    end
   end
   
   # Performs a check to see if the specified player's king is under check or checkmate status
