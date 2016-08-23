@@ -28,7 +28,7 @@ end
 
 # Class representing a fully playable chess game
 class Chess
-  attr_accessor :board, :pawns, :rooks, :knights, :bishops, :kings, :queens
+  attr_accessor :board, :pawns, :rooks, :knights, :bishops, :kings, :queens, :p1_possible_movelist, :p2_possible_movelist
   
   def initialize
     @current_player = 1
@@ -39,22 +39,22 @@ class Chess
     @bishops = []
     @kings = []
     @queens = []
+    @p1_possible_movelist = []
+    @p2_possible_movelist = []
     
     initialize_board
     initialize_chess_pieces
     set_initial_locations
-    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    # <<<<<
 =begin
-    @board[7][5].occupant = nil
-    @board[4][3].occupant = @bishops[1]
-    @bishops[1].row = 4
-    @bishops[1].col = 3
-    calculate_possible_moves
-
-    @bishops.each do |k|
-      puts "#{k.possible_moves}"
-    end
+    @board[7][4].occupant = nil
+    @board[2][4].occupant = @kings[0]
+    @kings[0].row = 2
+    @kings[0].col = 4
 =end
+    calculate_possible_moves
+    
+    puts ">>> #{checkmate_status(1)}"
   end
   
   # Initializes the game board
@@ -218,6 +218,9 @@ class Chess
       end
     end
     
+    p1_possible_movelist = []
+    p2_possible_movelist = []
+    
     calculate_pawn_moves
     calculate_rook_moves(2)
     calculate_knight_moves
@@ -227,6 +230,8 @@ class Chess
   end
   
   # Calculates all possible moves for all the pawns on the chess board
+  # TODO only diagonal capture moves should be added into possible moves
+  # add an argument into the helper method to check
   def calculate_pawn_moves
     @pawns.each_with_index do |pawn, index|
       # Does not calculate moves if the piece has been captured
@@ -237,25 +242,37 @@ class Chess
       
       # White
       if(index < 8)
+        #@p1_possible_movelist << [row + row_modifier, col + col_modifier]
         # Forward
-        @pawns[index].possible_moves << [row - 1, col] if(row > 0 && @board[row - 1][col].occupant == nil)
+        #@pawns[index].possible_moves << [row - 1, col] if(row > 0 && @board[row - 1][col].occupant == nil)
+        calculate_pawn_helper(index, row, col, -1, 0) if(row > 0 && @board[row - 1][col].occupant == nil)
         # 2x Forward
-        @pawns[index].possible_moves << [row - 2, col] if(row == 6 && @board[row - 2][col].occupant == nil)
+        calculate_pawn_helper(index, row, col, -2, 0) if(row == 6 && @board[row - 2][col].occupant == nil)
         # Capture left
-        @pawns[index].possible_moves << [row - 1, col - 1] if(row > 0 && col > 0 && @board[row - 1][col - 1].occupant != nil && @board[row - 1][col - 1].occupant.player_ID == 2)
+        calculate_pawn_helper(index, row, col, -1, -1) if(row > 0 && col > 0 && @board[row - 1][col - 1].occupant != nil && @board[row - 1][col - 1].occupant.player_ID == 2)
         # Capture right
-        @pawns[index].possible_moves << [row - 1, col + 1] if(row > 0 && col < 7 && @board[row - 1][col + 1].occupant != nil && @board[row - 1][col + 1].occupant.player_ID == 2)
+        calculate_pawn_helper(index, row, col, -1, 1) if(row > 0 && col < 7 && @board[row - 1][col + 1].occupant != nil && @board[row - 1][col + 1].occupant.player_ID == 2)
       # Black
       elsif(index >= 8)
         # Forward
-        @pawns[index].possible_moves << [row + 1, col] if(row < 7 && @board[row + 1][col].occupant == nil)
+        calculate_pawn_helper(index, row, col, 1, 0) if(row < 7 && @board[row + 1][col].occupant == nil)
         # 2x Forward
-        @pawns[index].possible_moves << [row + 2, col] if(row == 1 && @board[row + 2][col].occupant == nil)
+        calculate_pawn_helper(index, row, col, 2, 0) if(row == 1 && @board[row + 2][col].occupant == nil)
         # Capture left
-        @pawns[index].possible_moves << [row + 1, col - 1] if(row < 7 && col > 0 && @board[row + 1][col - 1].occupant != nil && @board[row + 1][col - 1].occupant.player_ID == 1)
+        calculate_pawn_helper(index, row, col, 1, -1) if(row < 7 && col > 0 && @board[row + 1][col - 1].occupant != nil && @board[row + 1][col - 1].occupant.player_ID == 1)
         # Capture right
-        @pawns[index].possible_moves << [row + 1, col + 1] if(row < 7 && col < 7 && @board[row + 1][col + 1].occupant != nil && @board[row + 1][col + 1].occupant.player_ID == 1)
+        calculate_pawn_helper(index, row, col, 1, 1) if(row < 7 && col < 7 && @board[row + 1][col + 1].occupant != nil && @board[row + 1][col + 1].occupant.player_ID == 1)
       end
+    end
+  end
+  
+  def calculate_pawn_helper(index, row, col, row_modifier, col_modifier)
+    @pawns[index].possible_moves << [row + row_modifier, col + col_modifier]
+    case @pawns[index].player_ID
+      when 1
+        @p1_possible_movelist << [row + row_modifier, col + col_modifier]
+      when 2
+        @p2_possible_movelist << [row + row_modifier, col + col_modifier]
     end
   end
   
@@ -417,13 +434,25 @@ class Chess
     
     if(@board[row + row_modifier][col + col_modifier].occupant == nil)
       temp_array[index].possible_moves << [row + row_modifier, col + col_modifier]
+      
+      if(temp_array[index].player_ID == 1)
+        @p1_possible_movelist << [row + row_modifier, col + col_modifier]
+      elsif(temp_array[index].player_ID == 2)
+        @p2_possible_movelist << [row + row_modifier, col + col_modifier]
+      end
     # Adds the given coordinates into the list of possible moves if the square is occupied by a capturable piece
     elsif(@board[row + row_modifier][col + col_modifier].occupant != nil)
       case temp_array[index].player_ID
         when 1
-          temp_array[index].possible_moves << [row + row_modifier, col + col_modifier] if(@board[row + row_modifier][col + col_modifier].occupant.player_ID == 2)
+          if(@board[row + row_modifier][col + col_modifier].occupant.player_ID == 2)
+            temp_array[index].possible_moves << [row + row_modifier, col + col_modifier]
+            @p1_possible_movelist << [row + row_modifier, col + col_modifier]
+          end
         when 2
-          temp_array[index].possible_moves << [row + row_modifier, col + col_modifier] if(@board[row + row_modifier][col + col_modifier].occupant.player_ID == 1)
+          if(@board[row + row_modifier][col + col_modifier].occupant.player_ID == 1)
+            temp_array[index].possible_moves << [row + row_modifier, col + col_modifier]
+            @p2_possible_movelist << [row + row_modifier, col + col_modifier]
+          end
       end
       
       return 1
@@ -469,9 +498,67 @@ class Chess
   
   end
   
-  # Performs a check to see if the specified player's king is under check or checkmate status
-  def checkmate_status(player)
+  # Moves the chess piece which is located at the source coordinates to the destination coordinates
+  def move_piece(source, destination)
+    piece_to_move = @board[source[0]][source[1]].occupant
+    piece_to_capture = @board[destination[0]][destination[1]].occupant
     
+    # Move the piece to the new location
+    piece_to_move.row = destination[0]
+    piece_to_move.col = destination[1]
+    @board[source[0]][source[1]].occupant = nil
+    @board[destination[0]][destination[1]].occupant = piece_to_move
+    
+    # If the destination square is occupied, change the status of the occupant to "dead"
+    piece_to_capture.alive = false if(piece_to_capture != nil)
+  end
+
+  # Reverts the last move which was made
+  def undo_last_move
+    
+  end
+  
+  # Performs a check to see if the specified player's king is under check or checkmate status
+  # Returns 0 if king is not threatened, 1 if under check, 2 if checkmated
+  def checkmate_status(player_ID)
+    status = 0
+    possible_moves = []
+    
+    # Returns 0 immediately if the king is not under check
+    puts "HELLO!" if(!king_is_threatened?(player_ID))
+    status = 1
+    
+    status = 2 if(!valid_moves_available?(player_ID))
+    
+    return status
+  end
+
+  # Checks to see if the king of the specified player is currently being threatened
+  def king_is_threatened?(player_ID)
+    king = nil
+    to_check = []
+    coordinates = []
+    is_threatened = false
+    
+    case player_ID
+      when 1
+        king = @kings[0]
+        to_check = @p2_possible_movelist
+      when 2
+        king = @kings[1]
+        to_check = @p1_possible_movelist
+    end
+    
+    coordinates = [king.row, king.col]
+    is_threatened = true if(to_check.include? coordinates)
+    
+    return is_threatened
+  end
+
+  # Checks to see if there are any valid moves available for the specified king
+  # Returns true if there are valid moves to be made, false otherwise
+  def valid_moves_available?(player_ID)
+    return false
   end
   
   # Saves the current game state
