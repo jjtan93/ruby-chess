@@ -50,16 +50,7 @@ class Chess
     initialize_board
     initialize_chess_pieces
     set_initial_locations
-    # <<<<<
-=begin
-    @board[7][4].occupant = nil
-    @board[2][4].occupant = @kings[0]
-    @kings[0].row = 2
-    @kings[0].col = 4
-=end
     calculate_possible_moves
-    
-    puts ">>> #{checkmate_status(1)}"
   end
   
   # Initializes the game board
@@ -551,9 +542,12 @@ class Chess
     possible_moves = []
     
     # Returns 0 immediately if the king is not under check
-    puts "HELLO!" if(!king_is_threatened?(player_ID))
+    return status if(!king_is_threatened?(player_ID))
+    
+    # At this stage, the king is guaranteed to be at least in check status
     status = 1
     
+    # If there are no valid moves available, then the king is checkmated
     status = 2 if(!valid_moves_available?(player_ID))
     
     return status
@@ -584,6 +578,31 @@ class Chess
   # Checks to see if there are any valid moves available for the specified king
   # Returns true if there are valid moves to be made, false otherwise
   def valid_moves_available?(player_ID)
+    king = nil
+    
+    case player_ID
+      when 1
+        king = @kings[0]
+      when 2
+        king = @kings[1]
+    end
+    
+    # Iterate through all possible moves the king can make
+    # If any one of the moves does not result in the king being threatened, then it is a check
+    # Otherwise, it is a checkmate
+    source = [king.row, king.col]
+    
+    king.possible_moves.each do |move|
+      move_piece(source, move)
+      calculate_possible_moves
+      
+      is_threatened = king_is_threatened?(player_ID)
+      
+      undo_last_move
+      
+      return true if(!is_threatened)
+    end
+    
     return false
   end
   
