@@ -247,37 +247,40 @@ class Chess
       
       # White
       if(index < 8)
-        #@p1_possible_movelist << [row + row_modifier, col + col_modifier]
         # Forward
-        #@pawns[index].possible_moves << [row - 1, col] if(row > 0 && @board[row - 1][col].occupant == nil)
-        calculate_pawn_helper(index, row, col, -1, 0) if(row > 0 && @board[row - 1][col].occupant == nil)
+        calculate_pawn_helper(index, row, col, -1, 0, false) if(row > 0 && @board[row - 1][col].occupant == nil)
         # 2x Forward
-        calculate_pawn_helper(index, row, col, -2, 0) if(row == 6 && @board[row - 2][col].occupant == nil)
+        calculate_pawn_helper(index, row, col, -2, 0, false) if(row == 6 && @board[row - 2][col].occupant == nil)
         # Capture left
-        calculate_pawn_helper(index, row, col, -1, -1) if(row > 0 && col > 0 && @board[row - 1][col - 1].occupant != nil && @board[row - 1][col - 1].occupant.player_ID == 2)
+        calculate_pawn_helper(index, row, col, -1, -1, true) if(row > 0 && col > 0 && @board[row - 1][col - 1].occupant != nil && @board[row - 1][col - 1].occupant.player_ID == 2)
         # Capture right
-        calculate_pawn_helper(index, row, col, -1, 1) if(row > 0 && col < 7 && @board[row - 1][col + 1].occupant != nil && @board[row - 1][col + 1].occupant.player_ID == 2)
+        calculate_pawn_helper(index, row, col, -1, 1, true) if(row > 0 && col < 7 && @board[row - 1][col + 1].occupant != nil && @board[row - 1][col + 1].occupant.player_ID == 2)
       # Black
       elsif(index >= 8)
         # Forward
-        calculate_pawn_helper(index, row, col, 1, 0) if(row < 7 && @board[row + 1][col].occupant == nil)
+        calculate_pawn_helper(index, row, col, 1, 0, false) if(row < 7 && @board[row + 1][col].occupant == nil)
         # 2x Forward
-        calculate_pawn_helper(index, row, col, 2, 0) if(row == 1 && @board[row + 2][col].occupant == nil)
+        calculate_pawn_helper(index, row, col, 2, 0, false) if(row == 1 && @board[row + 2][col].occupant == nil)
         # Capture left
-        calculate_pawn_helper(index, row, col, 1, -1) if(row < 7 && col > 0 && @board[row + 1][col - 1].occupant != nil && @board[row + 1][col - 1].occupant.player_ID == 1)
+        calculate_pawn_helper(index, row, col, 1, -1, true) if(row < 7 && col > 0 && @board[row + 1][col - 1].occupant != nil && @board[row + 1][col - 1].occupant.player_ID == 1)
         # Capture right
-        calculate_pawn_helper(index, row, col, 1, 1) if(row < 7 && col < 7 && @board[row + 1][col + 1].occupant != nil && @board[row + 1][col + 1].occupant.player_ID == 1)
+        calculate_pawn_helper(index, row, col, 1, 1, true) if(row < 7 && col < 7 && @board[row + 1][col + 1].occupant != nil && @board[row + 1][col + 1].occupant.player_ID == 1)
       end
     end
   end
   
-  def calculate_pawn_helper(index, row, col, row_modifier, col_modifier)
+  # Helper method that adds the move coordinates to the possible_moves list of specified pawn
+  def calculate_pawn_helper(index, row, col, row_modifier, col_modifier, capturable_move)
     @pawns[index].possible_moves << [row + row_modifier, col + col_modifier]
-    case @pawns[index].player_ID
-      when 1
-        @p1_possible_movelist << [row + row_modifier, col + col_modifier]
-      when 2
-        @p2_possible_movelist << [row + row_modifier, col + col_modifier]
+    
+    # Only add to the possible movelist if it is a move which can result in the capture of an enemy piece
+    if(capturable_move)
+      case @pawns[index].player_ID
+        when 1
+          @p1_possible_movelist << [row + row_modifier, col + col_modifier]
+        when 2
+          @p2_possible_movelist << [row + row_modifier, col + col_modifier]
+      end
     end
   end
   
@@ -518,7 +521,7 @@ class Chess
     # If the destination square is occupied, change the status of the occupant to "dead"
     piece_to_capture.alive = false if(piece_to_capture != nil)
     
-    # Record the necessary information which will be used to undo a move if necessary
+    # Record the necessary informtion which will be used to undo a move if necessary
     @source = source
     @destination = destination
     @piece_moved = piece_to_move
