@@ -4,6 +4,7 @@
 # threats for isthreatened, possible moves for checkmate status
 # TODO don't let pawn move 2x if it is blocked
 # TODO save + load
+require 'yaml'
 
 # Data structure representing a single square on the chess board
 class BoardSquare
@@ -666,6 +667,7 @@ class Chess
     
     # Continue prompting the player for a move until a valid move is given
     while(!valid_move)
+      display_board
       color = ""
       case @current_player
         when 1
@@ -678,12 +680,14 @@ class Chess
       
       # Save the game state
       if(input == "save")
-        
+        save_game
+        next
       end
       
       # Load a saved game state
       if(input == "load")
-        
+        load_game
+        next
       end
       
       # Parse the input
@@ -734,10 +738,41 @@ class Chess
   
   # Saves the current game state
   def save_game
+    File.open("save_state.yaml", "w") do |file|
+      file.write(self.to_yaml)
+    end
+    
+    puts ">>>>> GAME STATE SAVED! <<<<<"
   end
   
   # Loads a previous saved game state
   def load_game
+    unless File.exists?("save_state.yaml")
+      File.new("save_state.yaml", "w+")
+    end
+    loaded_data = YAML.load_file("save_state.yaml")
+    
+    @current_player = loaded_data.instance_variable_get(:@current_player)
+    @board = loaded_data.instance_variable_get(:@board)
+    @pawns = loaded_data.instance_variable_get(:@pawns)
+    @rooks = loaded_data.instance_variable_get(:@rooks)
+    @knights = loaded_data.instance_variable_get(:@knights)
+    @bishops = loaded_data.instance_variable_get(:@bishops)
+    @kings = loaded_data.instance_variable_get(:@kings)
+    @queens = loaded_data.instance_variable_get(:@queens)
+    @p1_possible_movelist = loaded_data.instance_variable_get(:@p1_possible_movelist)
+    @p2_possible_movelist = loaded_data.instance_variable_get(:@p2_possible_movelist)
+    @p1_possible_movelist_src = loaded_data.instance_variable_get(:@p1_possible_movelist_src)
+    @p2_possible_movelist_src = loaded_data.instance_variable_get(:@p2_possible_movelist_src)
+    @p1_threats = loaded_data.instance_variable_get(:@p1_threats)
+    @p2_threats = loaded_data.instance_variable_get(:@p2_threats)
+    
+    @source = loaded_data.instance_variable_get(:@source)
+    @destination = loaded_data.instance_variable_get(:@destination)
+    @piece_moved = loaded_data.instance_variable_get(:@piece_moved)
+    @piece_captured = loaded_data.instance_variable_get(:@piece_captured)
+    
+    puts ">>>>> GAME STATE LOADED! <<<<<"
   end
   
   # Runs the entire chess game
@@ -746,7 +781,7 @@ class Chess
     player = ""
     
     while(!game_over)
-      display_board
+      #display_board
       prompt(@current_player)
       enemy_king_status = 0
       enemy = ""
@@ -775,7 +810,7 @@ class Chess
       swap_player_turn
     end
     
-    puts ">>> Game Over! Player #{player} has won! <<<"
+    puts ">>> GAME OVER! Player #{player} has won! <<<"
   end
   
   # Swap's the turn priority to the opposing player
@@ -883,4 +918,4 @@ end
 
 c = Chess.new
 #c.display_board
-#c.run
+c.run
