@@ -1,9 +1,3 @@
-# TODO don't allow king to move into check!!!!!!!!!!!!!!!
-# TODO checkmate status check, not only kking move, check all moves from that color
-# TODO figured it out, use a separate array for threats, and possible moves
-# threats for isthreatened, possible moves for checkmate status
-# TODO don't let pawn move 2x if it is blocked
-# TODO save + load
 require 'yaml'
 
 # Data structure representing a single square on the chess board
@@ -26,7 +20,6 @@ class ChessPiece
   def initialize
     @type = -1
     @player_ID = -1
-    @number = -1 # TODO might not be used
     @row = -1
     @col = -1
     @possible_moves = []
@@ -62,14 +55,7 @@ class Chess
     initialize_board
     initialize_chess_pieces
     set_initial_locations
-=begin
-    @board[0][3].occupant = nil
-    @board[3][0].occupant = @queens[1]
-    @queens[1].row = 3
-    @queens[1].col = 0
-=end
     calculate_possible_moves
-    #puts "#{@p2_possible_movelist_src}"
   end
   
   # Initializes the game board
@@ -281,7 +267,7 @@ class Chess
     end
   end
   
-  # Helper method that adds the move coordinates to the possible_moves list of specified pawn
+  # Helper method that adds the move coordinates to the possible_moves list of the specified pawn
   def calculate_pawn_helper(index, row, col, row_modifier, col_modifier, capturable_move)
     @pawns[index].possible_moves << [row + row_modifier, col + col_modifier]
     
@@ -539,48 +525,6 @@ class Chess
     calculate_bishop_moves(6)
   end
   
-  # Moves the chess piece which is located at the source coordinates to the destination coordinates
-  # If a capture is possible, no color check is done as the check is done prior to calling this method
-  def move_piece(source, destination)
-    piece_to_move = @board[source[0]][source[1]].occupant
-    piece_to_capture = @board[destination[0]][destination[1]].occupant
-    
-    # Move the piece to the new location
-    piece_to_move.row = destination[0]
-    piece_to_move.col = destination[1]
-    @board[source[0]][source[1]].occupant = nil
-    @board[destination[0]][destination[1]].occupant = piece_to_move
-    
-    # If the destination square is occupied, change the status of the occupant to "dead"
-    piece_to_capture.alive = false if(piece_to_capture != nil)
-    
-    # Record the necessary informtion which will be used to undo a move if necessary
-    @source = source
-    @destination = destination
-    @piece_moved = piece_to_move
-    @piece_captured = piece_to_capture
-    
-    calculate_possible_moves
-  end
-
-  # Reverts the last move which was made
-  def undo_last_move
-    # Move the piece back to the original location
-    @piece_moved.row = @source[0]
-    @piece_moved.col = @source[1]
-    @board[@source[0]][@source[1]].occupant = @piece_moved
-    
-    @board[@destination[0]][@destination[1]].occupant = nil
-    
-    # Revive the captured piece, if possible
-    if(@piece_captured != nil)
-      @piece_captured.alive = true
-      @board[@destination[0]][@destination[1]].occupant = @piece_captured
-    end
-    
-    calculate_possible_moves
-  end
-  
   # Performs a check to see if the specified player's king is under check or checkmate status
   # Returns 0 if king is not threatened, 1 if under check, 2 if checkmated
   def checkmate_status(player_ID)
@@ -645,8 +589,6 @@ class Chess
     # Iterate through all possible moves the player can make
     # If any one of the moves does not result in the king being threatened, then it is a check
     # Otherwise, it is a checkmate
-    # TODO NOT KING ONLY, ALL MOVES
-    #source = [king.row, king.col]
     movelist.each_with_index do |move, index|
       source = movelist_src[index]
       move_piece(source, move)
@@ -659,6 +601,87 @@ class Chess
     end
     
     return false
+  end
+  
+  # Moves the chess piece which is located at the source coordinates to the destination coordinates
+  # If a capture is possible, no color check is done as the check is done prior to calling this method
+  def move_piece(source, destination)
+    piece_to_move = @board[source[0]][source[1]].occupant
+    piece_to_capture = @board[destination[0]][destination[1]].occupant
+    
+    # Move the piece to the new location
+    piece_to_move.row = destination[0]
+    piece_to_move.col = destination[1]
+    @board[source[0]][source[1]].occupant = nil
+    @board[destination[0]][destination[1]].occupant = piece_to_move
+    
+    # If the destination square is occupied, change the status of the occupant to "dead"
+    piece_to_capture.alive = false if(piece_to_capture != nil)
+    
+    # Record the necessary informtion which will be used to undo a move if necessary
+    @source = source
+    @destination = destination
+    @piece_moved = piece_to_move
+    @piece_captured = piece_to_capture
+    
+    calculate_possible_moves
+  end
+
+  # Reverts the last move which was made
+  def undo_last_move
+    # Move the piece back to the original location
+    @piece_moved.row = @source[0]
+    @piece_moved.col = @source[1]
+    @board[@source[0]][@source[1]].occupant = @piece_moved
+    
+    @board[@destination[0]][@destination[1]].occupant = nil
+    
+    # Revive the captured piece, if possible
+    if(@piece_captured != nil)
+      @piece_captured.alive = true
+      @board[@destination[0]][@destination[1]].occupant = @piece_captured
+    end
+    
+    calculate_possible_moves
+  end
+  
+  # Saves the current game state
+  def save_game
+    File.open("save_state.yaml", "w") do |file|
+      file.write(self.to_yaml)
+    end
+    
+    puts ">>>>> GAME STATE SAVED! <<<<<"
+  end
+  
+  # Loads a previous saved game state
+  def load_game
+    unless File.exists?("save_state.yaml")
+      File.new("save_state.yaml", "w+")
+    end
+    loaded_data = YAML.load_file("save_state.yaml")
+    
+    @current_player = loaded_data.instance_variable_get(:@current_player)
+    @board = loaded_data.instance_variable_get(:@board)
+    @pawns = loaded_data.instance_variable_get(:@pawns)
+    @rooks = loaded_data.instance_variable_get(:@rooks)
+    @knights = loaded_data.instance_variable_get(:@knights)
+    @bishops = loaded_data.instance_variable_get(:@bishops)
+    @kings = loaded_data.instance_variable_get(:@kings)
+    @queens = loaded_data.instance_variable_get(:@queens)
+    @p1_possible_movelist = loaded_data.instance_variable_get(:@p1_possible_movelist)
+    @p2_possible_movelist = loaded_data.instance_variable_get(:@p2_possible_movelist)
+    @p1_possible_movelist_src = loaded_data.instance_variable_get(:@p1_possible_movelist_src)
+    @p2_possible_movelist_src = loaded_data.instance_variable_get(:@p2_possible_movelist_src)
+    @p1_threats = loaded_data.instance_variable_get(:@p1_threats)
+    @p2_threats = loaded_data.instance_variable_get(:@p2_threats)
+    
+    @source = loaded_data.instance_variable_get(:@source)
+    @destination = loaded_data.instance_variable_get(:@destination)
+    @piece_moved = loaded_data.instance_variable_get(:@piece_moved)
+    @piece_captured = loaded_data.instance_variable_get(:@piece_captured)
+    
+    puts ">>>>> GAME STATE LOADED! <<<<<"
   end
   
   # Prompts the current player for a move
@@ -736,52 +759,12 @@ class Chess
     end
   end
   
-  # Saves the current game state
-  def save_game
-    File.open("save_state.yaml", "w") do |file|
-      file.write(self.to_yaml)
-    end
-    
-    puts ">>>>> GAME STATE SAVED! <<<<<"
-  end
-  
-  # Loads a previous saved game state
-  def load_game
-    unless File.exists?("save_state.yaml")
-      File.new("save_state.yaml", "w+")
-    end
-    loaded_data = YAML.load_file("save_state.yaml")
-    
-    @current_player = loaded_data.instance_variable_get(:@current_player)
-    @board = loaded_data.instance_variable_get(:@board)
-    @pawns = loaded_data.instance_variable_get(:@pawns)
-    @rooks = loaded_data.instance_variable_get(:@rooks)
-    @knights = loaded_data.instance_variable_get(:@knights)
-    @bishops = loaded_data.instance_variable_get(:@bishops)
-    @kings = loaded_data.instance_variable_get(:@kings)
-    @queens = loaded_data.instance_variable_get(:@queens)
-    @p1_possible_movelist = loaded_data.instance_variable_get(:@p1_possible_movelist)
-    @p2_possible_movelist = loaded_data.instance_variable_get(:@p2_possible_movelist)
-    @p1_possible_movelist_src = loaded_data.instance_variable_get(:@p1_possible_movelist_src)
-    @p2_possible_movelist_src = loaded_data.instance_variable_get(:@p2_possible_movelist_src)
-    @p1_threats = loaded_data.instance_variable_get(:@p1_threats)
-    @p2_threats = loaded_data.instance_variable_get(:@p2_threats)
-    
-    @source = loaded_data.instance_variable_get(:@source)
-    @destination = loaded_data.instance_variable_get(:@destination)
-    @piece_moved = loaded_data.instance_variable_get(:@piece_moved)
-    @piece_captured = loaded_data.instance_variable_get(:@piece_captured)
-    
-    puts ">>>>> GAME STATE LOADED! <<<<<"
-  end
-  
   # Runs the entire chess game
   def run
     game_over = false
     player = ""
     
     while(!game_over)
-      #display_board
       prompt(@current_player)
       enemy_king_status = 0
       enemy = ""
@@ -917,5 +900,4 @@ class Chess
 end
 
 c = Chess.new
-#c.display_board
-c.run
+#c.run
